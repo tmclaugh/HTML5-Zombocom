@@ -1,9 +1,11 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"> 
+<html>
   <head>
     <title>ZOMBO</title>
+    <meta charset="UTF-8">
+
     <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async="true" src="https://www.googletagmanager.com/gtag/js?id=UA-108790083-1"></script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-108790083-1"></script>
     <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -186,9 +188,9 @@
             </svg>
         </div>
         
-        <audio autoplay="autoplay" playcount="999" id="looper" loop="true">
-            <source src="zombo.ogg"></source>
-            <source src="zombo.mp3"></source>
+        <audio autoplay id="looper" loop>
+            <source src="zombo.ogg">
+            <source src="zombo.mp3">
         </audio>
         
         <div style="text-align: center; width: 100%; display:none;" id="start_container">

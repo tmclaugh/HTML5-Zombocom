@@ -29,8 +29,8 @@ resources:
       Properties:
         AccessControl: PublicRead
         WebsiteConfiguration:
-          IndexDocument: index.xhtml
-          ErrorDocument: index.xhtml
+          IndexDocument: index.html
+          ErrorDocument: index.html
 
     StaticSiteS3BucketPolicy:
       Type: AWS::S3::BucketPolicy
@@ -86,11 +86,11 @@ resources:
           Enabled: 'true'
           Aliases:
             - ${self:custom.hostedZoneName}
-          DefaultRootObject: index.xhtml
+          DefaultRootObject: index.html
           CustomErrorResponses:
             - ErrorCode: 404
               ResponseCode: 200
-              ResponsePagePath: /index.xhtml
+              ResponsePagePath: /index.html
           DefaultCacheBehavior:
             AllowedMethods:
               - GET
