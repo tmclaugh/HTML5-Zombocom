@@ -11,7 +11,7 @@ custom:
     - bucketRef: StaticSite
       localDir: static
   hostedZoneName: serverless-zombo.com
-  hostedZoneId: Z3AQBSTGFYJSTF    # us-east-1
+  hostedZoneId: Z2FDTNDATAQYW2    # CloudFront
   aliasDNSName: s3-website-us-east-1.amazonaws.com
 
 provider:
@@ -28,7 +28,6 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         AccessControl: PublicRead
-        BucketName: ${self:custom.hostedZoneName}
         WebsiteConfiguration:
           IndexDocument: index.xhtml
           ErrorDocument: index.xhtml
@@ -42,9 +41,9 @@ resources:
           Statement:
             - Sid: PublicReadGetObject
               Effect: Allow
-              Principal: "*"
+              Principal: '*'
               Action:
-              - s3:GetObject
+                - s3:GetObject
               Resource:
                 Fn::Join: [
                   "", [
@@ -56,29 +55,85 @@ resources:
                   ]
                 ]
 
+    StaticSiteCert:
+      Type: AWS::CertificateManager::Certificate
+      Properties:
+        DomainName: ${self:custom.hostedZoneName}
+        DomainValidationOptions:
+        - DomainName: ${self:custom.hostedZoneName}
+          ValidationDomain: ${self:custom.hostedZoneName}
+
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Origins:
+            - DomainName:
+                Fn::Join: [
+                  "", [
+                    { "Ref": "StaticSite" },
+                    ".s3.amazonaws.com"
+                  ]
+                ]
+              # It isn't necessary to sue this value; but we need the same
+              # value for DefaultCacheBehavior.TargetOriginId
+              Id:
+                Ref: StaticSite
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+          Enabled: 'true'
+          Aliases:
+            - ${self:custom.hostedZoneName}
+          DefaultRootObject: index.xhtml
+          CustomErrorResponses:
+            - ErrorCode: 404
+              ResponseCode: 200
+              ResponsePagePath: /index.xhtml
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - GET
+              - HEAD
+            TargetOriginId:
+              Ref: StaticSite
+            ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+          ViewerCertificate:
+            AcmCertificateArn:
+              Ref: StaticSiteCert
+            SslSupportMethod: sni-only
+          ## Uncomment the following section in case you want to enable logging for CloudFront requests
+          # Logging:
+          #  IncludeCookies: 'false'
+          #   Bucket: mylogs.s3.amazonaws.com
+          #   Prefix: myprefix
+      DependsOn:
+        - StaticSiteS3BucketPolicy
+
     DnsRecord:
       Type: "AWS::Route53::RecordSet"
       Properties:
         AliasTarget:
-          DNSName: ${self:custom.aliasDNSName}
+          DNSName:
+            Fn::GetAtt:
+              - CloudFrontDistribution
+              - DomainName
           HostedZoneId: ${self:custom.hostedZoneId}
         HostedZoneName: ${self:custom.hostedZoneName}.
-        Name:
-          Ref: StaticSite
+        Name: ${self:custom.hostedZoneName}.
         Type: 'A'
 
   Outputs:
     StaticSiteS3BucketName:
       Value:
-        'Ref': StaticSite
-    StaticSiteS3BucketDomainName:
+        Ref: StaticSite
+    CloudFrontDistribution:
       Value:
         Fn::GetAtt:
-          - StaticSite
+          - CloudFrontDistribution
           - DomainName
-    StaticSiteS3BucketWebsiteURL:
-      Value:
-        Fn::GetAtt:
-          - StaticSite
-          - WebsiteURL
 
